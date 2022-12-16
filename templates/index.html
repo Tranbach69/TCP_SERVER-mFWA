@@ -1,0 +1,45 @@
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <form method="POST" action="/calc" data-calc-form>
+    <input type="text" name='text'>
+    <button>Calculate</button>
+    <pre data-preview></pre>
+</form>
+
+<script>
+    window.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+        const form = document.querySelector('[data-calc-form]');
+        const textInput = document.querySelector('[name=text]');
+        const preview = document.querySelector('[data-preview]');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const text = textInput.value;
+            const results = await fetchEstimations(text);
+            preview.textContent = JSON.stringify(results, null, 4);
+        });
+    }
+
+    async function fetchEstimations(text) {
+        const payload = new FormData();
+        payload.append('text', text);
+
+        const res = await fetch('/calc', {
+            method: 'post',
+            body: payload
+        });
+        const estimation = await res.json();
+        return estimation;
+    }
+</script>
+</body>
+</html>
