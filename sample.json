@@ -43,8 +43,9 @@
 //ethernet
 {
   "Index": 2,
+  "FlagConfig":0,
   "Imei": "868808038822133",
-  "DriverType": 1,
+  "DriverType": "1",
   "DriverEn": 1,
   "BringUpdownEn": 1,
   "IpStaticEn":1,
