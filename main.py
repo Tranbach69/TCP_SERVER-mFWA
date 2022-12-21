@@ -171,11 +171,14 @@ def device_request_handler(conn, addr):
                 data = conn.recv(2048).decode('utf-8')
                 if  not data:
                     print('client disconnect')  
-                    print('befor my_clients\n',my_clients)               
-                    my_clients.pop((my_clients.index(conn)+1))          # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
-                    my_clients.remove(conn)
-                    print('after my_clients\n',my_clients) 
-                               
+                    print('befor my_clients\n',my_clients)
+                    try:
+                                      
+                        my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
+                        my_clients.remove(conn)
+                        print('after my_clients\n',my_clients) 
+                    except :
+                        print('error remove')                     
                     break
                 print(data)                               
                 jsonObjectString=data.replace("'", '"')
@@ -187,18 +190,18 @@ def device_request_handler(conn, addr):
                             sqlUpdate='''UPDATE "Device"
                                 SET "SocketConnection"='1'                      
                                 WHERE "Imei"= '%s'  '''%(deviceIm)
-                            cursor.execute(sqlUpdate)                                                     #cập nhật trạng thái connect lên database mõi khi có connect
+                            cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
                             print('update SocketConnection:1 of Device table success')
                             
                         except (Exception, psycopg2.Error) as error:
                             print("Failed to update  SocketConnection:1 of Device table", error)
-                        if conn in my_clients:                                                           # kiểm tra Client đã tồn tại trong mảng client chưa
+                        if conn in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưa
                             print('da co\n')
                         else:
-                            my_clients += [conn,jsonObject['Imei']]                                      # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+                            my_clients += [conn,jsonObject['Imei']]                                 # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
                             print('chua co \n')
                         print(jsonObject)  
-                        if jsonObject['Index']==0:                                                        # index=0 có nghĩa là gói tin của wifi và sẽ xử lý trong hàm handle_wifi_data
+                        if jsonObject['Index']==0:                                                  # index=0 có nghĩa là gói tin của wifi và sẽ xử lý trong hàm handle_wifi_data
                             handle_wifi_data(jsonObject)
                         elif jsonObject['Index']==1:                     
                             handle_lte4g_data(jsonObject)
@@ -210,10 +213,10 @@ def device_request_handler(conn, addr):
                             print('invalid index')
                     else:
                         if deviceIm in flag_config:                        
+                            print("đã tồn tại gói tin cấu hình\n")
+                        else:
                             flag_config+=[deviceIm,jsonObject['Status']]
-                            print("goi config\n")
-                            print('flag_config:',flag_config)
-                        
+                            print('flag_config:',flag_config)                   
                 except ValueError:  
                     print('Decoding JSON has failed')
                 conn.send("server receive success".encode('utf-8')) 
@@ -222,25 +225,22 @@ def device_request_handler(conn, addr):
                 return False 
         conn.close()
 def be_request_handler(conn, addr):
-    global my_clients                                                            # khai báo biến toàn cục
+    global my_clients                                                                               # khai báo biến toàn cục
     global flag_config
     with conn:
         print(conn, addr)
         while True:
             try:
-                data = conn.recv(1024).decode('utf-8')                           # nhận dữ liệu từ BE
-                print(data)
-                print ("Total number of threads", threading.activeCount())       # kiểm tra tổng số thread đang hoạt động
-                            
-                jsonObjectString=data.replace("'", '"')                          # thay thế " --> '  
+                data = conn.recv(1024).decode('utf-8')                                              # nhận dữ liệu từ BE
+                print(data)                       
+                jsonObjectString=data.replace("'", '"')                                             # thay thế " --> '  
                 try:
-                    jsonObject=json.loads(jsonObjectString)                      # convert sang json object
-                    print('jsonObject \n',jsonObject)
+                    jsonObject=json.loads(jsonObjectString)                                         # convert sang json object
                     deviceIm=jsonObject['Imei']
-                    if deviceIm in my_clients:                                   # kiểm tra xem thiết bị có số imei được user cấu hình có tồn tại trong mảng chứa các client không
+                    if deviceIm in my_clients:                                                      # kiểm tra xem thiết bị có số imei được user cấu hình có tồn tại trong mảng chứa các client không
                         print('Thiết bị đang có kết nối\n')                                      
-                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))     # có connect thì gửi dữ liệu về    
-                        timeout = time.time() + 40                                              #timeout 40s 
+                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về    
+                        timeout = time.time() + 40                                                  #timeout 40s 
                         while True:  
                             test = 0                                       
                             if deviceIm in flag_config:                                                    
@@ -251,7 +251,7 @@ def be_request_handler(conn, addr):
                                     print('config Wifi Failure')                                   
                                     conn.sendall("failure0".encode('utf-8'))
                                     break
-                                elif flag_config[statusIndex]=="01":                                                    # cấu hình wifi thành công 
+                                elif flag_config[statusIndex]=="01":                                # cấu hình wifi thành công 
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
                                     print('config wifi success')
@@ -263,7 +263,7 @@ def be_request_handler(conn, addr):
                                     flag_config.remove(deviceIm)
                                     conn.sendall("failure1".encode('utf-8'))
                                     break
-                                elif flag_config[statusIndex]=="11":                                                    # cấu hình lte4g thành công  
+                                elif flag_config[statusIndex]=="11":                                # cấu hình lte4g thành công  
                                     flag_config.pop(statusIndex)
                                     print('config Lte4g success')
                                     flag_config.remove(deviceIm)
@@ -275,7 +275,7 @@ def be_request_handler(conn, addr):
                                     print('config Ethernet Failure')                             
                                     conn.sendall("failure2".encode('utf-8'))
                                     break
-                                elif flag_config[statusIndex]=="21":                                                    # cấu hình ethernet thành công  
+                                elif flag_config[statusIndex]=="21":                                # cấu hình ethernet thành công  
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
                                     print('config Ethernet success')
@@ -287,7 +287,7 @@ def be_request_handler(conn, addr):
                                     print('config Gps Failure')                              
                                     conn.sendall("failure3".encode('utf-8'))
                                     break
-                                elif flag_config[statusIndex]=="31":                                                 # cấu hình gps thành công 
+                                elif flag_config[statusIndex]=="31":                                # cấu hình gps thành công 
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
                                     print('config Gps success')                                   
@@ -302,8 +302,7 @@ def be_request_handler(conn, addr):
                                 conn.sendall("failure".encode('utf-8'))
                                 print('timeout 40s')
                                 break
-                            test = test - 1
-                                                                            
+                            test = test - 1                                                                           
                     else:
                         print('thiết bị mất kết nối \n')
                         conn.sendall("failure".encode('utf-8'))  
@@ -312,19 +311,16 @@ def be_request_handler(conn, addr):
                                 SET "SocketConnection"='0'
                                 WHERE "Imei"= '%s'  '''%(deviceIm)
                             cursor.execute(sqlUpdate)                                               #cập nhật trạng thái lên server
-                            print('update SocketConnection of Device table success')
-                            
+                            print('update SocketConnection of Device table success')                          
                         except (Exception, psycopg2.Error) as error:                        
                             print("Failed to update  SocketConnection of Device table", error)      # in ra lỗi nếu xảy ra khi cập nhật data base           
                         connectionSql.commit()                                                      # commit data base
                 except ValueError:                                                                  # lỗi khi convert sang json object
                     print('Decoding JSON has failed')
-                    conn.sendall("Decoding JSON has failed".encode('utf-8'))
-                               
+                    conn.sendall("Decoding JSON has failed".encode('utf-8'))                             
                 if not data:                                                                        # BE disconnect thì sẽ break và end thread 
                     print('client disconnect')
-                    break
-                                                   
+                    break                                              
             except ConnectionAbortedError:
                 conn.close()
                 return False 
@@ -332,9 +328,9 @@ def be_request_handler(conn, addr):
                    
 def back_end_requets():
 
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:            # tạo đối tượng socket
-        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)             # 
-        s.bind(('0.0.0.0', 3023))                                           #
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:                                    # tạo đối tượng socket
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)             
+        s.bind(('0.0.0.0', 3023))                                           
         s.listen()
         print('Server For BE is listening')
         while True:
@@ -342,7 +338,7 @@ def back_end_requets():
             
             print('Connected with', addr[0], ':', str(addr[1]))
             print ("Total number of threads", threading.activeCount())
-            threading.Thread(target=be_request_handler, args=(conn, addr)).start()  # tạo thread khi có connect
+            threading.Thread(target=be_request_handler, args=(conn, addr)).start()                  # tạo thread khi có connect
         s.close()       
 
 def device_requets():
