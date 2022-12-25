@@ -172,8 +172,7 @@ def device_request_handler(conn, addr):
                 if  not data:
                     print('client disconnect')  
                     print('befor my_clients\n',my_clients)
-                    try:
-                                      
+                    try:                               
                         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
                         my_clients.remove(conn)
                         print('after my_clients\n',my_clients) 
@@ -311,9 +310,9 @@ def be_request_handler(conn, addr):
                                 SET "SocketConnection"='0'
                                 WHERE "Imei"= '%s'  '''%(deviceIm)
                             cursor.execute(sqlUpdate)                                               #cập nhật trạng thái lên server
-                            print('update SocketConnection of Device table success')                          
+                            print('update SocketConnection:0 of Device table success')                          
                         except (Exception, psycopg2.Error) as error:                        
-                            print("Failed to update  SocketConnection of Device table", error)      # in ra lỗi nếu xảy ra khi cập nhật data base           
+                            print("Failed to update  SocketConnection:0 of Device table", error)      # in ra lỗi nếu xảy ra khi cập nhật data base           
                         connectionSql.commit()                                                      # commit data base
                 except ValueError:                                                                  # lỗi khi convert sang json object
                     print('Decoding JSON has failed')
@@ -334,10 +333,8 @@ def back_end_requets():
         s.listen()
         print('Server For BE is listening')
         while True:
-            conn, addr = s.accept()
-            
+            conn, addr = s.accept()         
             print('Connected with', addr[0], ':', str(addr[1]))
-            print ("Total number of threads", threading.activeCount())
             threading.Thread(target=be_request_handler, args=(conn, addr)).start()                  # tạo thread khi có connect
         s.close()       
 
@@ -351,13 +348,9 @@ def device_requets():
         while True:
             conn, addr = s.accept()        
             print('Connected with', addr[0], ':', str(addr[1]))
-            print ("Total number of threads", threading.activeCount())
             threading.Thread(target=device_request_handler, args=(conn, addr)).start() 
         s.close()   
          
-
-
-
 
 def main():
     threading.Thread(target=back_end_requets, args=()).start()          # thread cho BE
