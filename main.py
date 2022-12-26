@@ -179,7 +179,7 @@ def device_request_handler(conn, addr):
                     except :
                         print('error remove')                     
                     break
-                print(data)                               
+                print('\n',data)                             
                 jsonObjectString=data.replace("'", '"')
                 try:
                     jsonObject=json.loads(jsonObjectString)
@@ -215,7 +215,7 @@ def device_request_handler(conn, addr):
                             print("đã tồn tại gói tin cấu hình\n")
                         else:
                             flag_config+=[deviceIm,jsonObject['Status']]
-                            print('flag_config:',flag_config)                   
+                            print('chưa tồn tại gói tin cấu hình')                   
                 except ValueError:  
                     print('Decoding JSON has failed')
                 conn.send("server receive success".encode('utf-8')) 
@@ -237,8 +237,11 @@ def be_request_handler(conn, addr):
                     jsonObject=json.loads(jsonObjectString)                                         # convert sang json object
                     deviceIm=jsonObject['Imei']
                     if deviceIm in my_clients:                                                      # kiểm tra xem thiết bị có số imei được user cấu hình có tồn tại trong mảng chứa các client không
-                        print('Thiết bị đang có kết nối\n')                                      
-                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về    
+                        print('Thiết bị đang có kết nối\n')   
+                        print('my_clients',my_clients)
+                        print(data)                                   
+                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về  
+                        print('sau khi load json',jsonObject)  
                         timeout = time.time() + 40                                                  #timeout 40s 
                         while True:  
                             test = 0                                       
