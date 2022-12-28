@@ -167,11 +167,21 @@ def device_request_handler(conn, addr):
     with conn:
         print(conn, addr)
         while True:
-            try:             
-                data = conn.recv(2048).decode('utf-8')
+            try: 
+                try:            
+                    data = conn.recv(2048).decode('utf-8')
+                except:
+                    try:                               
+                        my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
+                        my_clients.remove(conn)
+                    except :
+                        print('error remove ')                   
+                    return 
+                
                 if  not data:
                     print('client disconnect')  
                     print('befor my_clients\n',my_clients)
+                    print('fileno',conn.fileno())
                     try:                               
                         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
                         my_clients.remove(conn)
@@ -194,7 +204,7 @@ def device_request_handler(conn, addr):
                             
                         except (Exception, psycopg2.Error) as error:
                             print("Failed to update  SocketConnection:1 of Device table", error)
-                        if conn in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưa
+                        if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưa
                             print('da co\n')
                         else:
                             my_clients += [conn,jsonObject['Imei']]                                 # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
@@ -218,10 +228,12 @@ def device_request_handler(conn, addr):
                             print('chưa tồn tại gói tin cấu hình')                   
                 except ValueError:  
                     print('Decoding JSON has failed')
-                conn.send("server receive success".encode('utf-8')) 
+                try:         
+                    conn.send("server receive success".encode('utf-8')) 
+                except:
+                    print('error send to client')
             except ConnectionAbortedError:
-                conn.close()
-                return False 
+                return
         conn.close()
 def be_request_handler(conn, addr):
     global my_clients                                                                               # khai báo biến toàn cục
@@ -230,7 +242,10 @@ def be_request_handler(conn, addr):
         print(conn, addr)
         while True:
             try:
-                data = conn.recv(1024).decode('utf-8')                                              # nhận dữ liệu từ BE
+                try:            
+                    data = conn.recv(2048).decode('utf-8')
+                except:                  
+                    return                                              # nhận dữ liệu từ BE
                 print(data)                       
                 jsonObjectString=data.replace("'", '"')                                             # thay thế " --> '  
                 try:
