@@ -224,8 +224,27 @@ def device_request_handler(conn, addr):
                         if deviceIm in flag_config:                        
                             print("đã tồn tại gói tin cấu hình\n")
                         else:
-                            flag_config+=[deviceIm,jsonObject['Status']]
-                            print('chưa tồn tại gói tin cấu hình')                   
+                            if "ChannelWifi1" in jsonObject:
+                                try:                     
+                                    sqlUpdate='''UPDATE "Wifi"
+                                        SET "ChannelWifi1"='%d',"ChannelModeWifi1"='%d'                     
+                                        WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi1']),(jsonObject['ChannelModeWifi1']), (jsonObject['Imei']))
+                                    cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                    print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success')                           
+                                except (Exception, psycopg2.Error) as error:
+                                    print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
+                            elif "ChannelWifi2" in jsonObject:
+                                try:                     
+                                    sqlUpdate='''UPDATE "Wifi"
+                                        SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
+                                        WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi2']),(jsonObject['ChannelModeWifi2']), (jsonObject['Imei']))
+                                    cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                    print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success')                           
+                                except (Exception, psycopg2.Error) as error:
+                                    print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)                                    
+                            else:                              
+                                flag_config+=[deviceIm,jsonObject['Status']]
+                                print('chưa tồn tại gói tin cấu hình')                   
                 except ValueError:  
                     print('Decoding JSON has failed')
                 try:         
