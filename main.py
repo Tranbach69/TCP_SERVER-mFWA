@@ -173,6 +173,7 @@ def device_request_handler(conn, addr):
             try: 
                 try:            
                     data = conn.recv(2048).decode('utf-8')
+                    print("dđaa",data)
                 except:
                     try:
                         print("error conn.recv") 
@@ -182,7 +183,7 @@ def device_request_handler(conn, addr):
                         print('after my_clients in recv\n',my_clients)    
                     except :
                         print('error remove my_client in error conn.recv ')                   
-                    conn.close()
+                    # conn.close()
                     return 
                 
                 if  not data:
@@ -201,6 +202,9 @@ def device_request_handler(conn, addr):
                 if "}{" in data :
                     x=data[data.rfind("}{"):]
                     y=x[1:]
+                    print('xxxx',x)
+                    
+                    print('yyyy',y)
                     try:
                         jsonObject=json.loads(y)
                         deviceIm=jsonObject['Imei']
@@ -264,7 +268,7 @@ def device_request_handler(conn, addr):
                                 print('chua tôn tại \n')
                                 print('befor lients\n',my_clients)
                         else:
-                            print("loi cu phap json") 
+                            print("loi cu phap jsonssss") 
                         return                                                  
                     except:
                         print('Decoding JSON has failed')
@@ -371,59 +375,69 @@ def be_request_handler(conn, addr):
                                 if flag_config[statusIndex]=="00":                                                              
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
-                                    print('config Wifi Failure')                                   
+                                    print('config Wifi Failure')
+                                                                     
                                     conn.sendall("failure0".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="01":                                # cấu hình wifi thành công 
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
                                     print('config wifi success')
+                                 
                                     conn.sendall("success0".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="10":                                                             
                                     flag_config.pop(statusIndex)
                                     print('config Lte4g Failure')
                                     flag_config.remove(deviceIm)
+                                   
                                     conn.sendall("failure1".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="11":                                # cấu hình lte4g thành công  
                                     flag_config.pop(statusIndex)
                                     print('config Lte4g success')
                                     flag_config.remove(deviceIm)
+                                
                                     conn.sendall("success1".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="20":                                                             
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
-                                    print('config Ethernet Failure')                             
+                                    print('config Ethernet Failure') 
+                                                               
                                     conn.sendall("failure2".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="21":                                # cấu hình ethernet thành công  
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
                                     print('config Ethernet success')
+                                   
                                     conn.sendall("success2".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="30":                                                             
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
-                                    print('config Gps Failure')                              
+                                    print('config Gps Failure') 
+                                                             
                                     conn.sendall("failure3".encode('utf-8'))
                                     break
                                 elif flag_config[statusIndex]=="31":                                # cấu hình gps thành công 
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
-                                    print('config Gps success')                                   
+                                    print('config Gps success')   
+                                                                   
                                     conn.sendall("success3".encode('utf-8'))
                                     break                            
                                 else:
                                     flag_config.pop(statusIndex)
                                     flag_config.remove(deviceIm)
+                                 
                                     conn.sendall("failure".encode('utf-8'))
                                     break                            
                             if time.time() > timeout:
                                 conn.sendall("failure".encode('utf-8'))
-                                print('timeout 40s')
+                                print('timeout 80s')
+                              
                                 break
                             test = test - 1                                                                           
                     else:
