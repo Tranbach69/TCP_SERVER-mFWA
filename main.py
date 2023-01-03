@@ -4,8 +4,11 @@ import json
 import time
 from datetime import datetime
 import psycopg2
+
 try:
     connectionSql = psycopg2.connect(user="postgres",
+
+
                                   password="1",
                                   host="localhost",
                                   port="5432",
@@ -171,11 +174,15 @@ def device_request_handler(conn, addr):
                 try:            
                     data = conn.recv(2048).decode('utf-8')
                 except:
-                    try:                               
+                    try:
+                        print("error conn.recv") 
+                        print('befor my_clients in recv \n',my_clients)                              
                         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
                         my_clients.remove(conn)
+                        print('after my_clients in recv\n',my_clients)    
                     except :
-                        print('error remove ')                   
+                        print('error remove my_client in error conn.recv ')                   
+                    conn.close()
                     return 
                 
                 if  not data:
@@ -191,6 +198,77 @@ def device_request_handler(conn, addr):
                     break
                 print('\n',data)                             
                 jsonObjectString=data.replace("'", '"')
+                if "}{" in data :
+                    x=data[data.rfind("}{"):]
+                    y=x[1:]
+                    try:
+                        jsonObject=json.loads(y)
+                        deviceIm=jsonObject['Imei']
+                        if jsonObject['FlagConfig']==0:
+                            try:                     
+                                sqlUpdate='''UPDATE "Device"
+                                    SET "SocketConnection"='1'                      
+                                    WHERE "Imei"= '%s'  '''%(deviceIm)
+                                cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                print('update SocketConnection:1 of Device table success')
+                                
+                            except (Exception, psycopg2.Error) as error:
+                                print("Failed to update  SocketConnection:1 of Device table", error)
+                            if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưa
+                                print('da co\n')
+                            else:
+                                my_clients += [conn,jsonObject['Imei']]                                 # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+                                print('chua co \n')
+                            print(jsonObject)  
+                            if jsonObject['Index']==0:                                                  # index=0 có nghĩa là gói tin của wifi và sẽ xử lý trong hàm handle_wifi_data
+                                handle_wifi_data(jsonObject)
+                            elif jsonObject['Index']==1:                     
+                                handle_lte4g_data(jsonObject)
+                            elif jsonObject['Index']==2:
+                                handle_ethernet_data(jsonObject)
+                            elif jsonObject['Index']==3:
+                                handle_gps_data(jsonObject)
+                            else:
+                                print('invalid index')
+                        elif jsonObject['FlagConfig']==1:
+                            if deviceIm in flag_config:                        
+                                print("đã tồn tại gói tin cấu hình\n")
+                            else:
+                                print('chưa tồn tại gói tin cấu hình')
+                                if "ChannelWifi1" in jsonObject:
+                                    try:                     
+                                        sqlUpdate='''UPDATE "Wifi"
+                                            SET "ChannelWifi1"='%d',"ChannelModeWifi1"='%d'                     
+                                            WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi1']),(jsonObject['ChannelModeWifi1']), (jsonObject['Imei']))
+                                        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                        print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success')                           
+                                    except (Exception, psycopg2.Error) as error:
+                                        print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
+                                elif "ChannelWifi2" in jsonObject:
+                                    try:                     
+                                        sqlUpdate='''UPDATE "Wifi"
+                                            SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
+                                            WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi2']),(jsonObject['ChannelModeWifi2']), (jsonObject['Imei']))
+                                        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                        print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success')                           
+                                    except (Exception, psycopg2.Error) as error:
+                                        print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)                                    
+                                else:                              
+                                    flag_config+=[deviceIm,jsonObject['Status']]
+                        elif jsonObject['FlagConfig']==2:
+                            if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
+                                print('da ton tai deviceIm print in FlagConfig=2 \n')
+                                print('befor my\n',my_clients)
+                            else:
+                                my_clients += [conn,jsonObject['Imei']]                                     # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+                                print('chua tôn tại \n')
+                                print('befor lients\n',my_clients)
+                        else:
+                            print("loi cu phap json") 
+                        return                                                  
+                    except:
+                        print('Decoding JSON has failed')
+                        return
                 try:
                     jsonObject=json.loads(jsonObjectString)
                     deviceIm=jsonObject['Imei']
@@ -220,10 +298,11 @@ def device_request_handler(conn, addr):
                             handle_gps_data(jsonObject)
                         else:
                             print('invalid index')
-                    else:
+                    elif jsonObject['FlagConfig']==1:
                         if deviceIm in flag_config:                        
                             print("đã tồn tại gói tin cấu hình\n")
                         else:
+                            print('chưa tồn tại gói tin cấu hình')
                             if "ChannelWifi1" in jsonObject:
                                 try:                     
                                     sqlUpdate='''UPDATE "Wifi"
@@ -244,7 +323,16 @@ def device_request_handler(conn, addr):
                                     print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)                                    
                             else:                              
                                 flag_config+=[deviceIm,jsonObject['Status']]
-                                print('chưa tồn tại gói tin cấu hình')                   
+                    elif jsonObject['FlagConfig']==2:
+                        if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
+                            print('da ton tai deviceIm print in FlagConfig=2 \n')
+                            print('befor my\n',my_clients)
+                        else:
+                            my_clients += [conn,jsonObject['Imei']]                                     # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+                            print('chua tôn tại \n')
+                            print('befor lients\n',my_clients)
+                    else:
+                        print("loi cu phap json") 
                 except ValueError:  
                     print('Decoding JSON has failed')
                 try:         
@@ -272,11 +360,10 @@ def be_request_handler(conn, addr):
                     deviceIm=jsonObject['Imei']
                     if deviceIm in my_clients:                                                      # kiểm tra xem thiết bị có số imei được user cấu hình có tồn tại trong mảng chứa các client không
                         print('Thiết bị đang có kết nối\n')   
-                        print('my_clients',my_clients)
-                        print(data)                                   
-                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về  
-                        print('sau khi load json',jsonObject)  
-                        timeout = time.time() + 40                                                  #timeout 40s 
+                        print('my_clients  print in  be request',my_clients)                                  
+                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về   
+                        print("aaaa")
+                        timeout = time.time() + 80                                                  #timeout 40s 
                         while True:  
                             test = 0                                       
                             if deviceIm in flag_config:                                                    
