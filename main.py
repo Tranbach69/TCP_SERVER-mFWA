@@ -366,7 +366,7 @@ def be_request_handler(conn, addr):
                         print('Thiết bị đang có kết nối\n')   
                         print('my_clients  print in  be request',my_clients)                                  
                         my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về   
-                        print("aaaa")
+                        print("waiting feedback")
                         timeout = time.time() + 80                                                  #timeout 40s 
                         while True:  
                             test = 0                                       
