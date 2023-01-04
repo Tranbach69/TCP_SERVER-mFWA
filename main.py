@@ -248,7 +248,8 @@ def device_request_handler(conn, addr):
                                         print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success')                           
                                     except (Exception, psycopg2.Error) as error:
                                         print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
-                                elif "ChannelWifi2" in jsonObject:
+                                    connectionSql.commit()
+                                else :
                                     try:                     
                                         sqlUpdate='''UPDATE "Wifi"
                                             SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
@@ -256,9 +257,10 @@ def device_request_handler(conn, addr):
                                         cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
                                         print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success')                           
                                     except (Exception, psycopg2.Error) as error:
-                                        print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)                                    
-                                else:                              
-                                    flag_config+=[deviceIm,jsonObject['Status']]
+                                        print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)
+                                    connectionSql.commit()                                    
+                                flag_config+=[deviceIm,jsonObject['Status']]                             
+                                    
                         elif jsonObject['FlagConfig']==2:
                             if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
                                 print('da ton tai deviceIm print in FlagConfig=2 \n')
@@ -306,17 +308,18 @@ def device_request_handler(conn, addr):
                         if deviceIm in flag_config:                        
                             print("đã tồn tại gói tin cấu hình\n")
                         else:
-                            print('chưa tồn tại gói tin cấu hình')
-                            if "ChannelWifi1" in jsonObject:
-                                try:                     
+                            print('chưa tồn tại gói tin cấu hình')                           
+                            if "ChannelWifi1" in jsonObject:                             
+                                try:                                                     
                                     sqlUpdate='''UPDATE "Wifi"
                                         SET "ChannelWifi1"='%d',"ChannelModeWifi1"='%d'                     
                                         WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi1']),(jsonObject['ChannelModeWifi1']), (jsonObject['Imei']))
-                                    cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                    cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
                                     print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success')                           
                                 except (Exception, psycopg2.Error) as error:
                                     print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
-                            elif "ChannelWifi2" in jsonObject:
+                                connectionSql.commit()
+                            else :
                                 try:                     
                                     sqlUpdate='''UPDATE "Wifi"
                                         SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
@@ -324,9 +327,9 @@ def device_request_handler(conn, addr):
                                     cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
                                     print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success')                           
                                 except (Exception, psycopg2.Error) as error:
-                                    print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)                                    
-                            else:                              
-                                flag_config+=[deviceIm,jsonObject['Status']]
+                                    print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)
+                                connectionSql.commit()
+                            flag_config+=[deviceIm,jsonObject['Status']]                                    
                     elif jsonObject['FlagConfig']==2:
                         if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
                             print('da ton tai deviceIm print in FlagConfig=2 \n')
