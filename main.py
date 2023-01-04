@@ -183,9 +183,9 @@ def device_request_handler(conn, addr):
                         print('after my_clients in recv\n',my_clients)    
                     except :
                         print('error remove my_client in error conn.recv ')                   
-                    # conn.close()
+                    conn.close()
                     return 
-                
+                # data = conn.recv(2048).decode('utf-8')
                 if  not data:
                     print('client disconnect')  
                     print('befor my_clients\n',my_clients)
@@ -364,8 +364,14 @@ def be_request_handler(conn, addr):
                     deviceIm=jsonObject['Imei']
                     if deviceIm in my_clients:                                                      # kiểm tra xem thiết bị có số imei được user cấu hình có tồn tại trong mảng chứa các client không
                         print('Thiết bị đang có kết nối\n')   
-                        print('my_clients  print in  be request',my_clients)                                  
-                        my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về   
+                        print('my_clients  print in  be request',my_clients)
+                        try:
+                                                              
+                            my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về 
+                            my_clients[(my_clients.index(deviceIm)-1)].close()  
+                        except:
+                            print("loiiiiiii")
+                            my_clients[(my_clients.index(deviceIm)-1)].close()  
                         print("waiting feedback")
                         timeout = time.time() + 80                                                  #timeout 40s 
                         while True:  
@@ -439,7 +445,9 @@ def be_request_handler(conn, addr):
                                 print('timeout 80s')
                               
                                 break
-                            test = test - 1                                                                           
+                            test = test - 1  
+                        conn.close()  
+                        return                                                                
                     else:
                         print('thiết bị mất kết nối \n')
                         conn.sendall("failure".encode('utf-8'))  
@@ -454,7 +462,8 @@ def be_request_handler(conn, addr):
                         connectionSql.commit()                                                      # commit data base
                 except ValueError:                                                                  # lỗi khi convert sang json object
                     print('Decoding JSON has failed')
-                    conn.sendall("Decoding JSON has failed".encode('utf-8'))                             
+                    conn.sendall("Decoding JSON has failed".encode('utf-8')) 
+                                            
                 if not data:                                                                        # BE disconnect thì sẽ break và end thread 
                     print('client disconnect')
                     break                                              
