@@ -197,7 +197,10 @@ def device_request_handler(conn, addr):
                     except :
                         print('error remove')                     
                     break
-                print('\n',data)                             
+                print('\n',data) 
+                if data =="p":
+                    print('pppppp')
+                    continue                            
                 jsonObjectString=data.replace("'", '"')
                 if "}{" in data :
                     x=data[data.rfind("}{"):]
@@ -238,18 +241,20 @@ def device_request_handler(conn, addr):
                             if deviceIm in flag_config:                        
                                 print("đã tồn tại gói tin cấu hình\n")
                             else:
-                                print('chưa tồn tại gói tin cấu hình')
-                                if "ChannelWifi1" in jsonObject:
-                                    try:                     
+                                print('chưa tồn tại gói tin cấu hình')                           
+                                if "ChannelWifi1" in jsonObject:                             
+                                    try:    
+                                        flag_config+=[deviceIm,jsonObject['Status']]                                                 
                                         sqlUpdate='''UPDATE "Wifi"
                                             SET "ChannelWifi1"='%d',"ChannelModeWifi1"='%d'                     
                                             WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi1']),(jsonObject['ChannelModeWifi1']), (jsonObject['Imei']))
-                                        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
+                                        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
                                         print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success')                           
                                     except (Exception, psycopg2.Error) as error:
                                         print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
                                     connectionSql.commit()
-                                else :
+                                elif "ChannelWifi2" in jsonObject :
+                                    flag_config+=[deviceIm,jsonObject['Status']]
                                     try:                     
                                         sqlUpdate='''UPDATE "Wifi"
                                             SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
@@ -258,8 +263,9 @@ def device_request_handler(conn, addr):
                                         print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success')                           
                                     except (Exception, psycopg2.Error) as error:
                                         print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)
-                                    connectionSql.commit()                                    
-                                flag_config+=[deviceIm,jsonObject['Status']]                             
+                                    connectionSql.commit()
+                                else:
+                                    flag_config+=[deviceIm,jsonObject['Status']]                            
                                     
                         elif jsonObject['FlagConfig']==2:
                             if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
@@ -310,7 +316,8 @@ def device_request_handler(conn, addr):
                         else:
                             print('chưa tồn tại gói tin cấu hình')                           
                             if "ChannelWifi1" in jsonObject:                             
-                                try:                                                     
+                                try:    
+                                    flag_config+=[deviceIm,jsonObject['Status']]                                                 
                                     sqlUpdate='''UPDATE "Wifi"
                                         SET "ChannelWifi1"='%d',"ChannelModeWifi1"='%d'                     
                                         WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi1']),(jsonObject['ChannelModeWifi1']), (jsonObject['Imei']))
@@ -319,7 +326,8 @@ def device_request_handler(conn, addr):
                                 except (Exception, psycopg2.Error) as error:
                                     print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
                                 connectionSql.commit()
-                            else :
+                            elif "ChannelWifi2" in jsonObject :
+                                flag_config+=[deviceIm,jsonObject['Status']]
                                 try:                     
                                     sqlUpdate='''UPDATE "Wifi"
                                         SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
@@ -329,7 +337,8 @@ def device_request_handler(conn, addr):
                                 except (Exception, psycopg2.Error) as error:
                                     print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)
                                 connectionSql.commit()
-                            flag_config+=[deviceIm,jsonObject['Status']]                                    
+                            else:
+                                flag_config+=[deviceIm,jsonObject['Status']]                                    
                     elif jsonObject['FlagConfig']==2:
                         if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
                             print('da ton tai deviceIm print in FlagConfig=2 \n')
@@ -342,10 +351,10 @@ def device_request_handler(conn, addr):
                         print("loi cu phap json") 
                 except ValueError:  
                     print('Decoding JSON has failed')
-                try:         
-                    conn.send("server receive success".encode('utf-8')) 
-                except:
-                    print('error send to client')
+                # try:         
+                #     conn.sendall("server receive success".encode('utf-8')) 
+                # except:
+                #     print('error send to client')
             except ConnectionAbortedError:
                 return
         conn.close()
@@ -370,10 +379,11 @@ def be_request_handler(conn, addr):
                         print('my_clients  print in  be request',my_clients)
                         try:
                                                               
-                            my_clients[(my_clients.index(deviceIm)-1)].send(data.encode('utf-8'))       # có connect thì gửi dữ liệu về 
+                            ret=my_clients[(my_clients.index(deviceIm)-1)].sendall(data.encode('utf-8'))       # có connect thì gửi dữ liệu về 
+                            print("ret: ",ret)
                             my_clients[(my_clients.index(deviceIm)-1)].close()  
-                        except:
-                            print("loiiiiiii")
+                        except error:
+                            print("error when sendall to device",error)
                             my_clients[(my_clients.index(deviceIm)-1)].close()  
                         print("waiting feedback")
                         timeout = time.time() + 80                                                  #timeout 40s 
