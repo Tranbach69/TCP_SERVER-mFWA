@@ -14,14 +14,14 @@ import json
 # print('z',z==2)
 
 # print('x',y)
-a='{"Index":"z","FlagConfig":2}{"Index":"891256123","FlagConfig":1,"Status":"01"}'
+a='{"Imei":"864284040218732","CheckConnection":0}{"Imei":"864284040218732","FlagConfig":2}{"Imei":"864284040218732","FlagConfig":1,"Status":"01"}'
 x=a.replace("}{","},{")
 x="["+x+"]"
 z=json.loads(x)
-
+print("a",z[1])
 for i in z:
-    if i['FlagConfig'] == 1:
-        print(type(i))
+    if ['FlagConfig'] in i:
+        print('aa')
         
         break
 
