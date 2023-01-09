@@ -264,15 +264,26 @@ def handle_flagConfig_2(deviceIm,conn):
         print('chua tôn tại \n')
         print('befor lients\n',my_clients)    
 
-def handle_flagConfig_3(deviceIm,conn):
+def handle_flagConfig_3(deviceIm,conn,jsonObject):
     global my_clients
     print('gói tin ping\n ')
+    
+    try:                                                    
+        sqlUpdate='''UPDATE "Device"
+            SET "UpTime"='%s'                    
+            WHERE "Imei"= '%s'  '''%((jsonObject['UpTime']), (jsonObject['Imei']))
+        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
+        print('update UpTime  of Device table success') 
+        connectionSql.commit()                          
+    except (Exception, psycopg2.Error) as error:
+        print("Failed to update UpTime  of Device table", error)
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
         print('da ton tai deviceIm print in CheckConnection \n')
     else:
         my_clients += [conn,deviceIm]                                     # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
         print('chua tôn tại \n')
         print('after add my_clients in CheckConnection\n',my_clients)
+    
 
 def device_request_handler(conn, addr):
     global my_clients
@@ -316,7 +327,7 @@ def device_request_handler(conn, addr):
                     elif jsonObject['FlagConfig']==2:
                         handle_flagConfig_2(deviceIm,conn)
                     elif jsonObject['FlagConfig']==3:
-                        handle_flagConfig_3(deviceIm,conn)
+                        handle_flagConfig_3(deviceIm,conn,jsonObject)
                     else:
                         print("loi cu phap json") 
                 except ValueError:  
@@ -463,7 +474,7 @@ def device_request():
         s.listen()
         print('Server For Device is listening')
         while True:
-            conn, addr = s.accept()        
+            conn, addr = s.accept()      
             print('Connected with', addr[0], ':', str(addr[1]))
             threading.Thread(target=device_request_handler, args=(conn, addr)).start() 
         s.close()   
