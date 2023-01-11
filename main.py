@@ -266,8 +266,7 @@ def handle_flagConfig_2(deviceIm,conn):
 
 def handle_flagConfig_3(deviceIm,conn,jsonObject):
     global my_clients
-    print('gói tin ping\n ')
-    
+    print('gói tin ping\n ') 
     try:                                                    
         sqlUpdate='''UPDATE "Device"
             SET "UpTime"='%s'                    
@@ -277,6 +276,26 @@ def handle_flagConfig_3(deviceIm,conn,jsonObject):
         connectionSql.commit()                          
     except (Exception, psycopg2.Error) as error:
         print("Failed to update UpTime  of Device table", error)
+    if "ClientCountWifi1" in jsonObject:
+        try:                                                    
+            sqlUpdate='''UPDATE "Wifi"
+                SET "ClientCountWifi1"='%d',"MacAddressWifi1"='%s'                 
+                WHERE "Imei"= '%s'  '''%((jsonObject['ClientCountWifi1']),(jsonObject['MacAddressWifi1']), (deviceIm))
+            cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
+            print('update ClientCountWifi1 and MacAddressWifi1  of Wifi table success') 
+            connectionSql.commit()                          
+        except (Exception, psycopg2.Error) as error:
+            print("Failed to update ClientCountWifi1 and MacAddressWifi1  of Wifi table", error)
+    if "ClientCountWifi2" in jsonObject:
+        try:                                                    
+            sqlUpdate='''UPDATE "Wifi"
+                SET "ClientCountWifi2"='%d',"MacAddressWifi2"='%s'                 
+                WHERE "Imei"= '%s'  '''%((jsonObject['ClientCountWifi2']),(jsonObject['MacAddressWifi2']), (deviceIm))
+            cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
+            print('update ClientCountWifi2 and MacAddressWifi2  of Wifi table success') 
+            connectionSql.commit()                          
+        except (Exception, psycopg2.Error) as error:
+            print("Failed to update ClientCountWifi2 and MacAddressWifi2  of Wifi table", error)
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
         print('da ton tai deviceIm print in CheckConnection \n')
     else:
