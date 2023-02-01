@@ -222,8 +222,9 @@ def handle_flagConfig_0(deviceIm,jsonObject,conn):
         print('invalid index')   
 
 def handle_flagConfig_1(deviceIm,jsonObject):
-    global flag_config
-    print('gói tin config\n ')
+    global flag_config                                 # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+    print('chua tôn tại \n')
+    print('befor lients\n',my_clients) 
     if deviceIm in flag_config:                        
         print("đã tồn tại gói tin cấu hình\n")
     else:
@@ -333,6 +334,11 @@ def device_request_handler(conn, addr):
                             conn.sendall("server receive success ".encode('utf-8'))
                             jsonObject=i
                             deviceIm=jsonObject['Imei']
+                            print('gói tin config\n ')
+                            if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
+                                print('da ton tai deviceIm print in FlagConfig=2 \n')
+                            else:
+                                my_clients += [conn,deviceIm] 
                             handle_flagConfig_1(deviceIm,jsonObject)
                             break                                 
                     continue                            
