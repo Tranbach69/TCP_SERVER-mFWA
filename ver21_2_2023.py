@@ -17,7 +17,9 @@ try:
 except (Exception, psycopg2.Error) as error:
     print("Failed to insert record into AccountAdmin table", error)
 
-my_clients = [] 
+my_clients = []                             # mảng chứa client và imei
+my_all_clients = []                         # mảng chứa tất cả các client 
+
 flag_config=[]
 deviceImeiCheck=[]
 
@@ -29,12 +31,11 @@ def handle_wifi_data(jsonObject):
         jsonObject (json Object): a Json object received from the device that includes information about Wifi
     """
     sqlGetWifiImei='''SELECT "Imei" FROM "Wifi" '''
-    
     cursor.execute(sqlGetWifiImei)
     wifiImeiList=cursor.fetchall()
-
-    wifiImei=(jsonObject['Imei'],)
+    wifiImei=(jsonObject['Imei'],) 
     if wifiImei in wifiImeiList:
+        
         try:                     
             sqlUpdate='''UPDATE "Wifi"
                 SET "WifiOpen"='%d',"WifiMode"='%d',"CurrentAp"='%d',"WifiNat"='%d',
@@ -47,6 +48,7 @@ def handle_wifi_data(jsonObject):
         except (Exception, psycopg2.Error) as error:
             print("Failed to update  Wifi table", error)
     else:
+        print("bbbbbbbbbb")  
         try:                
             sqlInsertInto='''INSERT INTO "Wifi"
                 VALUES ('%s',%d,%d,%d,%d,
@@ -157,11 +159,13 @@ def handle_gps_data(jsonObject):
 
 def handle_receive_error_data(conn):
     global my_clients
+    global my_all_clients
     try:
         print("error when receiving data (conn.recv)\n") 
         print('before my_clients print in error conn.recv \n',my_clients)                              
         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
-        my_clients.remove(conn)
+        my_clients.remove(conn) 
+        my_all_clients.remove(conn)
         print('after my_clients in recv\n',my_clients)    
     except :
         print('error remove my_client in error conn.recv\n ')                   
@@ -169,12 +173,15 @@ def handle_receive_error_data(conn):
 
 def handle_if_not_data(conn):
     global my_clients
+    global my_all_clients
     print('client disconnect\n')  
     print('before my_clients print if not data\n',my_clients)
     try:                               
         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
         my_clients.remove(conn)
+        my_all_clients.remove(conn)
         print('after my_clients\n',my_clients) 
+        print('after my_all_clients\n',my_all_clients) 
     except :
         print('error remove my_client in if not data\n ') 
 
@@ -202,7 +209,7 @@ def handle_flagConfig_0(deviceIm,jsonObject,conn):
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưa
         print('da co\n')
     else:
-        my_clients += [conn,jsonObject['Imei']]                                 # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+        my_clients += [conn,jsonObject['Imei']] 
         print('chua co \n')
     print(jsonObject)  
     if jsonObject['Index']==0:                                                  # index=0 có nghĩa là gói tin của wifi và sẽ xử lý trong hàm handle_wifi_data
@@ -224,7 +231,9 @@ def handle_flagConfig_1(deviceIm,conn,jsonObject):
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
         print('da ton tai deviceIm print in handle_flagConfig_1 \n')
     else:
-        my_clients += [conn,deviceIm]                                     # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+        my_clients += [conn,deviceIm] 
+                                   
+        # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
         print('chua tồn tại trong mảng  print in  handle_flagConfig_1 \n')
     if deviceIm in flag_config:                        
         print("đã tồn tại gói tin cấu hình\n")
@@ -259,6 +268,7 @@ def handle_flagConfig_1(deviceIm,conn,jsonObject):
 
 def handle_flagConfig_2(deviceIm,conn,jsonObject):
     global my_clients
+
     handle_remove_imei_in_check_device_imei(deviceIm)
     print('gói tin re-connect print in handle_flagConfig_2\n ')
     try:                                                    
@@ -273,7 +283,7 @@ def handle_flagConfig_2(deviceIm,conn,jsonObject):
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
         print('da ton tai deviceIm print in handle_flagConfig_2=2 \n')
     else:
-        my_clients += [conn,deviceIm]                                     # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
+        my_clients += [conn,deviceIm]                   
         print('chua tồn tại trong mảng  print in  handle_flagConfig_2 \n')    
 
 # def handle_flagConfig_3(deviceIm,conn,jsonObject):
@@ -319,10 +329,15 @@ def handle_flagConfig_2(deviceIm,conn,jsonObject):
 
 def device_request_handler(conn, addr):
     global my_clients
+    global my_all_clients
     global flag_config
     global deviceImeiCheck
     with conn:
         print(conn, addr)
+        if conn in my_all_clients:
+            print("client đã tồn tại trong my_all_client")
+        else:
+            my_all_clients += [conn]
         while True:
             try: 
                 try:            
@@ -389,7 +404,8 @@ def handle_device_disconnect (conn,deviceIm):
     connectionSql.commit() 
 
 def be_request_handler(conn, addr):
-    global my_clients                                                                               # khai báo biến toàn cục
+    global my_clients  
+    global my_all_clients                                                                               # khai báo biến toàn cục
     global flag_config
     global deviceImeiCheck
     with conn:
@@ -400,10 +416,28 @@ def be_request_handler(conn, addr):
                     data = conn.recv(2048).decode('utf-8')
                 except:                  
                     return                                              # nhận dữ liệu từ BE
-                print(data)                       
+                print(data) 
+                      
                 jsonObjectString=data.replace("'", '"')                                             # thay thế " --> '  
                 try:
                     jsonObject=json.loads(jsonObjectString)                                         # convert sang json object
+                    if jsonObject['Index']==4:
+                        print('my client all',my_all_clients)
+                        for client in my_all_clients:
+                            try:
+                                
+                                client.sendall(data.encode('utf-8'))
+                                client.close()
+                            except:
+                                print("error when handle sendAll client")
+                                try:
+                                    print("trc khi xóa  my all client \n ")
+        
+                                    my_all_clients.remove(client)
+                                    print("xóa thành công my all client \n ")
+                                except:
+                                    print("lỗi khi xóa client trong khi gửi lỗi")
+                        return
                     deviceIm=jsonObject['Imei']
                     if deviceIm in deviceImeiCheck:
                         print('thiết bị đang bận')
@@ -424,7 +458,7 @@ def be_request_handler(conn, addr):
                                 conn.sendall("failure".encode('utf-8'))
                                 return
                             print("waiting feedback")
-                            timeout = time.time() + 80                                                  #timeout 40s 
+                            timeout = time.time() + 30                                                #timeout 40s 
                             while True:  
                                 test = 0                                       
                                 if deviceIm in flag_config:                                                    
@@ -475,7 +509,7 @@ def be_request_handler(conn, addr):
                                         break                            
                                 if time.time() > timeout:
                                     conn.sendall("failure".encode('utf-8'))
-                                    print('timeout 80s')
+                                    print('timeout 30s')
                                     handle_remove_imei_in_check_device_imei(deviceIm) 
                                     break
                                 test = test - 1  
@@ -538,3 +572,4 @@ if __name__ == '__main__':                      # thread chính
 #             "Database=DATN;"
 #             "UID=sa;"
 #             "PWD=1234;")
+# phiên bản oke
