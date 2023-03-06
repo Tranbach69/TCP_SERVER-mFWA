@@ -19,8 +19,7 @@ except (Exception, psycopg2.Error) as error:
 
 my_clients = []                             # mảng chứa client và imei
 my_all_clients = []                         # mảng chứa tất cả các client 
-
-flag_config=[]
+flag_config=[]                              # mảng chứa trạng thái cấu hình của 
 deviceImeiCheck=[]
 
 def handle_wifi_data(jsonObject):
@@ -161,36 +160,45 @@ def handle_receive_error_data(conn):
     global my_clients
     global my_all_clients
     try:
-        print("error when receiving data (conn.recv)\n") 
-        print('before my_clients print in error conn.recv \n',my_clients)                              
+        # print("error when receiving data (conn.recv) my_clientmy_clientmy_clientmy_clientmy_clientmy_clientmy_client\n") 
+        # print('before my_clients print in error conn.recv \n',my_clients)                              
         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
         my_clients.remove(conn) 
-        my_all_clients.remove(conn)
-        print('after my_clients in recv\n',my_clients)    
+        # print('after my_clients in recv\n',my_clients)    
     except :
-        print('error remove my_client in error conn.recv\n ')                   
+        print('error remove my_client in handle_receive_error_data\n ')     
+    try:
+        # print("error when receiving data (conn.recv) my_all_clientmy_all_clientmy_all_clientmy_all_clientmy_all_client\n") 
+        my_all_clients.remove(conn)
+        # print('after my_clients in recv\n',my_clients)    
+    except :
+        print('error remove my_all_client in handle_receive_error_data\n ')               
     conn.close()   
 
 def handle_if_not_data(conn):
     global my_clients
     global my_all_clients
     print('client disconnect\n')  
-    print('before my_clients print if not data\n',my_clients)
+    # print('before my_clients print if not data\n',my_clients)
     try:                               
         my_clients.pop((my_clients.index(conn)+1))                                  # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
         my_clients.remove(conn)
-        my_all_clients.remove(conn)
-        print('after my_clients\n',my_clients) 
-        print('after my_all_clients\n',my_all_clients) 
+        # print('after my_clients\n',my_clients) 
     except :
         print('error remove my_client in if not data\n ') 
+    try:
+        # print("if not data my_all_client\n") 
+        my_all_clients.remove(conn)
+        # print('after my_clients in recv\n',my_clients)    
+    except :
+        print('error remove my_all_client in error conn.recv\n ')
 
 def handle_remove_imei_in_check_device_imei(deviceIm):
     global deviceImeiCheck
     try:  
-        print('before deviceImeiCheck\n',deviceImeiCheck)                                                               # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
+        # print('before deviceImeiCheck\n',deviceImeiCheck)                                                               # khi dũ liệu nhận được là "" đồng nghĩa với việc client hủy connect sẽ xóa client và số imei khỏi mảng   
         deviceImeiCheck.remove(deviceIm)
-        print('after deviceImeiCheck\n',deviceImeiCheck) 
+        # print('after deviceImeiCheck\n',deviceImeiCheck) 
     except :
         print('error remove deviceImeiCheck \n ') 
 
@@ -202,15 +210,15 @@ def handle_flagConfig_0(deviceIm,jsonObject,conn):
             SET "SocketConnection"='1'                      
             WHERE "Imei"= '%s'  '''%(deviceIm)
         cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
-        print('update SocketConnection:1 of Device table success')
+        print('update SocketConnection:1 of Device table success.\n')
         
     except (Exception, psycopg2.Error) as error:
-        print("Failed to update  SocketConnection:1 of Device table", error)
+        print("Failed to update  SocketConnection:1 of Device table.\n", error)
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưa
-        print('da co\n')
+        print('Already exists.  \n')
     else:
         my_clients += [conn,jsonObject['Imei']] 
-        print('chua co \n')
+        print('Does not exist. \n')
     print(jsonObject)  
     if jsonObject['Index']==0:                                                  # index=0 có nghĩa là gói tin của wifi và sẽ xử lý trong hàm handle_wifi_data
         handle_wifi_data(jsonObject)
@@ -221,24 +229,18 @@ def handle_flagConfig_0(deviceIm,jsonObject,conn):
     elif jsonObject['Index']==3:
         handle_gps_data(jsonObject)
     else:
-        print('invalid index')   
+        print('invalid index.\n')   
 
 def handle_flagConfig_1(deviceIm,conn,jsonObject):
     global my_clients
     global flag_config                                 # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
-    print('print in handle_flagConfig_1 \n')
-    # print('befor lients\n',my_clients) 
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
-        print('da ton tai deviceIm print in handle_flagConfig_1 \n')
+        print('\nthe Device already exists in my_client array. Print in  handle_flagConfig_1. \n')
     else:
         my_clients += [conn,deviceIm] 
-                                   
-        # chưa tồn tại thì thêm mới vào mảng, thêm cùng số imei vào ngay sau
-        print('chua tồn tại trong mảng  print in  handle_flagConfig_1 \n')
     if deviceIm in flag_config:                        
-        print("đã tồn tại gói tin cấu hình\n")
-    else:
-        print('chưa tồn tại gói tin cấu hình')                           
+        print("The device already exist in the flag_config array.\n")
+    else:                          
         if "ChannelWifi1" in jsonObject:                             
             try:    
                 flag_config+=[deviceIm,jsonObject['Status']]                                                 
@@ -246,9 +248,9 @@ def handle_flagConfig_1(deviceIm,conn,jsonObject):
                     SET "ChannelWifi1"='%d',"ChannelModeWifi1"='%d'                     
                     WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi1']),(jsonObject['ChannelModeWifi1']), (jsonObject['Imei']))
                 cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
-                print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success')                           
+                print('update ChannelWifi1 and ChannelModeWifi1 of Wifi table success.\n')                           
             except (Exception, psycopg2.Error) as error:
-                print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table", error)
+                print("Failed to update  ChannelWifi1 and ChannelModeWifi1 of Device table.\n", error)
             connectionSql.commit()
         elif "ChannelWifi2" in jsonObject :
             flag_config+=[deviceIm,jsonObject['Status']]
@@ -257,9 +259,9 @@ def handle_flagConfig_1(deviceIm,conn,jsonObject):
                     SET "ChannelWifi2"='%d',"ChannelModeWifi2"='%d'                     
                     WHERE "Imei"= '%s'  '''%((jsonObject['ChannelWifi2']),(jsonObject['ChannelModeWifi2']), (jsonObject['Imei']))
                 cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect
-                print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success')                           
+                print('update ChannelWifi2 and ChannelModeWifi2 of Wifi table success.\n')                           
             except (Exception, psycopg2.Error) as error:
-                print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table", error)
+                print("Failed to update  ChannelWifi2 and ChannelModeWifi2 of Device table.\n", error)
             connectionSql.commit()
         else:
             flag_config+=[deviceIm,jsonObject['Status']] 
@@ -270,21 +272,39 @@ def handle_flagConfig_2(deviceIm,conn,jsonObject):
     global my_clients
 
     handle_remove_imei_in_check_device_imei(deviceIm)
-    print('gói tin re-connect print in handle_flagConfig_2\n ')
-    try:                                                    
+    print('\nre-connect package, print in handle_flagConfig_2\n ')
+    try:    
         sqlUpdate='''UPDATE "Device"
             SET "UpTime"='%s'                    
             WHERE "Imei"= '%s'  '''%((jsonObject['UpTime']), (jsonObject['Imei']))
         cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
-        print('update UpTime  of Device table success') 
+        print('update UpTime  of Device table success.\n') 
         connectionSql.commit()                          
     except (Exception, psycopg2.Error) as error:
-        print("Failed to update UpTime  of Device table", error)
+        print("Failed to update UpTime  of Device table.\n", error)
+    try:    
+        sqlUpdate='''UPDATE "Wifi"
+            SET "TotalDataWifi1"='%d',"TotalDataWifi2"='%d'                     
+            WHERE "Imei"= '%s'  '''%((jsonObject['TotalDataWifi1']),(jsonObject['TotalDataWifi2']), (jsonObject['Imei']))
+        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
+        print('update TotalDataWifi  of Device table success.\n') 
+        connectionSql.commit()                          
+    except (Exception, psycopg2.Error) as error:
+        print("Failed to update TotalDataWifi  of Device table.\n", error)
+    try:    
+        sqlUpdate='''UPDATE "Ethernet"
+            SET "TotalDataEthernet"='%d'                    
+            WHERE "Imei"= '%s'  '''%((jsonObject['TotalDataEthernet']), (jsonObject['Imei']))
+        cursor.execute(sqlUpdate)                                               #cập nhật trạng thái connect lên database mõi khi có connect                                 
+        print('update TotalDataEthernet  of Device table success.\n') 
+        connectionSql.commit()                          
+    except (Exception, psycopg2.Error) as error:
+        print("Failed to update TotalDataEthernet of Device table.\n", error)
     if deviceIm in my_clients:                                                      # kiểm tra Client đã tồn tại trong mảng client chưad
-        print('da ton tai deviceIm print in handle_flagConfig_2=2 \n')
+        print('the Device already exists in my_client array. Print in  handle_flagConfig_2.\n')
     else:
         my_clients += [conn,deviceIm]                   
-        print('chua tồn tại trong mảng  print in  handle_flagConfig_2 \n')    
+        print('the Device does not exist in my_client array. Print in  handle_flagConfig_2. \n')    
 
 # def handle_flagConfig_3(deviceIm,conn,jsonObject):
 #     global my_clients
@@ -334,35 +354,42 @@ def device_request_handler(conn, addr):
     global deviceImeiCheck
     with conn:
         print(conn, addr)
-        if conn in my_all_clients:
-            print("client đã tồn tại trong my_all_client")
-        else:
-            my_all_clients += [conn]
         while True:
             try: 
                 try:            
                     data = conn.recv(2048).decode('utf-8')
-                    print("original data: \n",data)
+                    print("original data from Device: \n",data)
                 except:
                     handle_receive_error_data(conn)
                     return
+                if conn in my_all_clients:
+                    print("client Already exists in my_all_client")
+                else:
+                    my_all_clients += [conn]
                 if not data:
                     handle_if_not_data(conn)                   
                     break                          
                 jsonObjectString=data.replace("'", '"')
                 if "}{" in data :  
                     x=data.replace("}{","},{")
-                    print('sau khi thay thế "}{","},{": \n',x)
+                    # print('sau khi thay thế "}{","},{": \n',x)
                     x="["+x+"]"
-                    print('sau khi thêm [ ] vào 2 đầu : \n',x)
+                    # print('sau khi thêm [ ] vào 2 đầu : \n',x)
                     z=json.loads(x)
                     for i in z:
                         if i['FlagConfig'] == 1:
                             conn.sendall("server receive success ".encode('utf-8'))
                             jsonObject=i
                             deviceIm=jsonObject['Imei']
-                            print('gói tin config + gói tin re-connect\n ')
+                            print('config package + re-connect package.\n ')
                             handle_flagConfig_1(deviceIm,conn,jsonObject)
+                        if i['FlagConfig'] == 3:
+                            # conn.sendall("server receive success ".encode('utf-8'))
+                            # jsonObject=i
+                            # deviceIm=jsonObject['Imei']
+                            # print('config package + re-connect package.\n ')
+                            # handle_flagConfig_1(deviceIm,conn,jsonObject)
+                            print("thông báo update ota ",i)
                             break                                 
                     continue                            
                 try:
@@ -379,7 +406,7 @@ def device_request_handler(conn, addr):
                     else:
                         print("loi cu phap json") 
                 except ValueError:  
-                    print('Decoding JSON has failed trong hàm device connect')
+                    print('Decoding JSON has failed trong hàm device connect.\n')
             except ConnectionAbortedError:
                 return
         conn.close()
@@ -391,16 +418,16 @@ def handle_feedback_config(conn,statusIndex,deviceIm,message):
     conn.sendall(message.encode('utf-8'))   
 
 def handle_device_disconnect (conn,deviceIm):
-    print('thiết bị mất kết nối \n')
+    print('Device disconnected.  \n')
     conn.sendall("failure".encode('utf-8'))  
     try:                                                                        # không tồn tại thì có nghĩa là thiết bị đang mất kết nối với server
         sqlUpdate='''UPDATE "Device"
             SET "SocketConnection"='0'
             WHERE "Imei"= '%s'  '''%(deviceIm)
         cursor.execute(sqlUpdate)                                               #cập nhật trạng thái lên server
-        print('update SocketConnection:0 of Device table success')                          
+        print('update SocketConnection:0 of Device table success.\n')                          
     except (Exception, psycopg2.Error) as error:                        
-        print("Failed to update  SocketConnection:0 of Device table", error)      # in ra lỗi nếu xảy ra khi cập nhật data base           
+        print("Failed to update  SocketConnection:0 of Device table.\n", error)      # in ra lỗi nếu xảy ra khi cập nhật data base           
     connectionSql.commit() 
 
 def be_request_handler(conn, addr):
@@ -416,7 +443,7 @@ def be_request_handler(conn, addr):
                     data = conn.recv(2048).decode('utf-8')
                 except:                  
                     return                                              # nhận dữ liệu từ BE
-                print(data) 
+                print("data receive from Back-End:\n",data) 
                       
                 jsonObjectString=data.replace("'", '"')                                             # thay thế " --> '  
                 try:
@@ -429,79 +456,81 @@ def be_request_handler(conn, addr):
                                 client.sendall(data.encode('utf-8'))
                                 client.close()
                             except:
-                                print("error when handle sendAll client")
+                                print("\n error when sendAll(updateOta) client.\n")
                                 try:
-                                    print("trc khi xóa  my all client \n ")
+                                    # print("trc khi xóa  my all client \n ")
         
                                     my_all_clients.remove(client)
                                     print("xóa thành công my all client \n ")
                                 except:
-                                    print("lỗi khi xóa client trong khi gửi lỗi")
+                                    print("Error when deleting each client of my_all_client.\n")
+                        print('\n my client all\n ',my_all_clients)
+                        
                         return
                     deviceIm=jsonObject['Imei']
                     if deviceIm in deviceImeiCheck:
-                        print('thiết bị đang bận')
+                        print('Device busy.\n')
                         conn.sendall("failure99".encode('utf-8'))
                     else:
-                        print('thiết bị đang rảnh')
+                        print('Device is idle\n')
                         if deviceIm in my_clients:                                                      # kiểm tra xem thiết bị có số imei được user cấu hình có tồn tại trong mảng chứa các client không
-                            print('Thiết bị đang có kết nối\n')   
-                            print('my_clients  print in  be request',my_clients)
+                            print('Device is currently connected.\n')   
+                            # print('my_clients  print in  be request.\n',my_clients)
                             try:                             
                                 ret=my_clients[(my_clients.index(deviceIm)-1)].sendall(data.encode('utf-8'))       # có connect thì gửi dữ liệu về 
                                 print("ret: ",ret)
                                 deviceImeiCheck+=[deviceIm]
                                 my_clients[(my_clients.index(deviceIm)-1)].close()  
                             except :
-                                print("error when sendall to device")
+                                print("error when sendall(Configution) to device.\n")
                                 my_clients[(my_clients.index(deviceIm)-1)].close()
                                 conn.sendall("failure".encode('utf-8'))
                                 return
-                            print("waiting feedback")
-                            timeout = time.time() + 30                                                #timeout 40s 
+                            print("waiting feedback.\n")
+                            timeout = time.time() + 30                                                #timeout 30s 
                             while True:  
                                 test = 0                                       
                                 if deviceIm in flag_config:                                                    
                                     statusIndex=(flag_config.index(deviceIm)+1)
                                     if flag_config[statusIndex]=="00":                                                              
-                                        print('config Wifi Failure')                                
+                                        print('config Wifi Failure.\n')                                
                                         handle_feedback_config(conn,statusIndex,deviceIm,"failure0")
                                         handle_remove_imei_in_check_device_imei(deviceIm)
                                         break
                                     elif flag_config[statusIndex]=="01":                                # cấu hình wifi thành công 
-                                        print('config wifi success')
+                                        print('config wifi success.\n')
                                         handle_feedback_config(conn,statusIndex,deviceIm,"success0")
                                         handle_remove_imei_in_check_device_imei(deviceIm)
                                         break
                                     elif flag_config[statusIndex]=="10":   
                                         handle_feedback_config(conn,statusIndex,deviceIm,"failure1") 
                                         handle_remove_imei_in_check_device_imei(deviceIm)                                                         
-                                        print('config Lte4g Failure')
+                                        print('config Lte4g Failure.\n')
                                         break
                                     elif flag_config[statusIndex]=="11":  
                                         handle_feedback_config(conn,statusIndex,deviceIm,"success1")# cấu hình lte4g thành công 
                                         handle_remove_imei_in_check_device_imei(deviceIm) 
-                                        print('config Lte4g success')
+                                        print('config Lte4g success.\n')
                                         break
                                     elif flag_config[statusIndex]=="20":    
                                         handle_feedback_config(conn,statusIndex,deviceIm,"failure2") 
                                         handle_remove_imei_in_check_device_imei(deviceIm)                                                        
-                                        print('config Ethernet Failure')                                                                
+                                        print('config Ethernet Failure.\n')                                                                
                                         break
                                     elif flag_config[statusIndex]=="21":                                # cấu hình ethernet thành công  
                                         handle_feedback_config(conn,statusIndex,deviceIm,"success2")  
                                         handle_remove_imei_in_check_device_imei(deviceIm)
-                                        print('config Ethernet success')                                   
+                                        print('config Ethernet success.\n')                                   
                                         break
                                     elif flag_config[statusIndex]=="30": 
                                         handle_feedback_config(conn,statusIndex,deviceIm,"failure3")  
                                         handle_remove_imei_in_check_device_imei(deviceIm)                                                           
-                                        print('config Gps Failure')                                                             
+                                        print('config Gps Failure.\n')                                                             
                                         break
                                     elif flag_config[statusIndex]=="31":                                # cấu hình gps thành công 
                                         handle_feedback_config(conn,statusIndex,deviceIm,"success3") 
                                         handle_remove_imei_in_check_device_imei(deviceIm)
-                                        print('config Gps success')                                                                      
+                                        print('config Gps success.\n')                                                                      
                                         break                            
                                     else:
                                         handle_feedback_config(conn,statusIndex,deviceIm,"failure") 
@@ -509,7 +538,7 @@ def be_request_handler(conn, addr):
                                         break                            
                                 if time.time() > timeout:
                                     conn.sendall("failure".encode('utf-8'))
-                                    print('timeout 30s')
+                                    print('timeout 30s.\n')
                                     handle_remove_imei_in_check_device_imei(deviceIm) 
                                     break
                                 test = test - 1  
@@ -518,11 +547,11 @@ def be_request_handler(conn, addr):
                         else:
                             handle_device_disconnect (conn,deviceIm)                                # commit data base
                 except ValueError:                                                                  # lỗi khi convert sang json object
-                    print('Decoding JSON has failed trong hàm backend request')
+                    print('Decoding JSON has failed trong hàm backend request.\n')
                     conn.sendall("Decoding JSON has failed".encode('utf-8')) 
                               
                 if not data:                                                                        # BE disconnect thì sẽ break và end thread 
-                    print('client BE disconnect')
+                    print('client BE disconnect.\n')
                     break                                              
             except ConnectionAbortedError:
                 conn.close()
@@ -572,4 +601,4 @@ if __name__ == '__main__':                      # thread chính
 #             "Database=DATN;"
 #             "UID=sa;"
 #             "PWD=1234;")
-# phiên bản oke
+# Uptime để trong gói re-connect bỏ flag config 3
